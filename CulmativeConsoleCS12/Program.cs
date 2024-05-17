@@ -24,6 +24,7 @@ namespace CulmativeConsoleCS12
             {
                 SerialPort port = new SerialPort{BaudRate = 9600, PortName = "COM6"};
                 port.Open();
+                ReceiveMessagesFromDeviceAsync(hubConnectionString, EventHubName, port);
                 try
                 {
                     while (true)
@@ -32,10 +33,10 @@ namespace CulmativeConsoleCS12
                         System.Threading.Thread.Sleep(500);
                         deviceClient = DeviceClient.CreateFromConnectionString(connectionString, TransportType.Mqtt);
                         SendMsg(oneLine);
-                        if (DateTime.Now.Second % 10 == 0)
+/*                        if (DateTime.Now.Second % 10 == 0)
                         {
                             ReceiveMessagesFromDeviceAsync(hubConnectionString, EventHubName, port);
-                        }
+                        }*/
                     }
                 }
                 catch (Exception ex) {
@@ -55,17 +56,25 @@ namespace CulmativeConsoleCS12
         {
             string jsonData = JsonConvert.SerializeObject(msg);
             Message message = new Message(Encoding.ASCII.GetBytes(jsonData));
-            await deviceClient.SendEventAsync(message);
             Console.WriteLine("{0:G} > Sent msg: {1}", DateTime.Now, msg);
-            await Task.Delay(500);
+            try
+            {
+                await deviceClient.SendEventAsync(message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"{e.Message}");
+                
+            }
+            await Task.Delay(1000);
         }
         public static void UpdateMinAndMax(SerialPort port, string message)
         {
-            port.WriteLine(message);
+            port.WriteLine(message.Substring(1));
         }
-        private async static void ReceiveMessagesFromDeviceAsync(string connectionString, string EventHubName, SerialPort port)
+        private async static Task ReceiveMessagesFromDeviceAsync(string hubConnectionString, string EventHubName, SerialPort port)
         {
-            await using EventHubConsumerClient consumer = new EventHubConsumerClient(EventHubConsumerClient.DefaultConsumerGroupName, connectionString, EventHubName);
+            await using EventHubConsumerClient consumer = new EventHubConsumerClient(EventHubConsumerClient.DefaultConsumerGroupName, hubConnectionString, EventHubName);
             await foreach (PartitionEvent partitionEvent in consumer.ReadEventsAsync())
             {
                 partitionEvent.Data.SystemProperties.TryGetValue("iothub-connection-device-id", out object deviceID);  // read event message from Event Hub partition 
@@ -74,9 +83,9 @@ namespace CulmativeConsoleCS12
                     string datum = Encoding.UTF8.GetString(partitionEvent.Data.Body.ToArray());
                     if (datum != null)
                     {
+                        Console.WriteLine(datum);
                         UpdateMinAndMax(port, datum);
                     }
-
                 }
             }
         }
