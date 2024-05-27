@@ -70,7 +70,8 @@ namespace CulmativeConsoleCS12
         }
         public static void UpdateMinAndMax(SerialPort port, string message)
         {
-            port.WriteLine(message.Substring(1));
+            port.WriteLine(message);
+            Console.WriteLine("Sent: " + message);
         }
         private async static Task ReceiveMessagesFromDeviceAsync(string hubConnectionString, string EventHubName, SerialPort port)
         {
@@ -83,8 +84,7 @@ namespace CulmativeConsoleCS12
                     string datum = Encoding.UTF8.GetString(partitionEvent.Data.Body.ToArray());
                     if (datum != null)
                     {
-                        Console.WriteLine(datum);
-                        UpdateMinAndMax(port, datum);
+                        UpdateMinAndMax(port, datum.Substring(2, datum.Length - 3));
                     }
                 }
             }
