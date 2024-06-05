@@ -33,10 +33,6 @@ namespace CulmativeConsoleCS12
                         System.Threading.Thread.Sleep(500);
                         deviceClient = DeviceClient.CreateFromConnectionString(connectionString, TransportType.Mqtt);
                         SendMsg(oneLine);
-/*                        if (DateTime.Now.Second % 10 == 0)
-                        {
-                            ReceiveMessagesFromDeviceAsync(hubConnectionString, EventHubName, port);
-                        }*/
                     }
                 }
                 catch (Exception ex) {
@@ -52,7 +48,7 @@ namespace CulmativeConsoleCS12
                 System.Threading.Thread.Sleep(500);
             }
         }
-        public async static void SendMsg(string msg)
+        public async static void SendMsg(string msg) // Sends data to the hub
         {
             string jsonData = JsonConvert.SerializeObject(msg);
             Message message = new Message(Encoding.ASCII.GetBytes(jsonData));
@@ -61,19 +57,20 @@ namespace CulmativeConsoleCS12
             {
                 await deviceClient.SendEventAsync(message);
             }
-            catch (Exception e)
+            catch (Exception e) // Stops it from crashing after 8000 messages
             {
                 Console.WriteLine($"{e.Message}");
                 
             }
             await Task.Delay(1000);
         }
-        public static void UpdateMinAndMax(SerialPort port, string message)
+        public static void UpdateMinAndMax(SerialPort port, string message) // Sends commands to arduino
         {
             port.WriteLine(message);
-            Console.WriteLine("Sent: " + message);
+            port.WriteLine(message);
+            port.WriteLine(message);
         }
-        private async static Task ReceiveMessagesFromDeviceAsync(string hubConnectionString, string EventHubName, SerialPort port)
+        private async static Task ReceiveMessagesFromDeviceAsync(string hubConnectionString, string EventHubName, SerialPort port) // Recieve commands from remote location
         {
             await using EventHubConsumerClient consumer = new EventHubConsumerClient(EventHubConsumerClient.DefaultConsumerGroupName, hubConnectionString, EventHubName);
             await foreach (PartitionEvent partitionEvent in consumer.ReadEventsAsync())
